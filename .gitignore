@@ -1,0 +1,15 @@
+# Sphinx documentation
+**/_build
+**/_static
+**/_templates
+
+# Python temporary files
+**/__pycache__
+
+# Packaging temporary files
+/dist/
+*.pyc
+/*.egg-info
+
+# macOS Temporary files
+**/.DS_Store
