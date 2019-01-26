@@ -225,8 +225,8 @@ class MountedVolume:
 
 
 class DMGState(enum.Enum):
-    DETACHED = enum.auto()
-    ATTACHED = enum.auto()
+    DETACHED = 1
+    ATTACHED = 2
 
 
 class DMGStatus:
