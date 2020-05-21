@@ -15,9 +15,6 @@ from contextlib import contextmanager
 NAME = 'dmglib'
 
 HDIUTIL_PATH = '/usr/bin/hdiutil'
-if not os.path.exists(HDIUTIL_PATH):
-    print('{} requires hdiutil'.format(NAME), file=sys.stderr)
-
 
 class InvalidDiskImage(Exception):
     """The disk image is deemed invalid and therefore cannot be attached."""
@@ -65,6 +62,9 @@ class DetachingFailed(Exception):
 
 def _raw_hdituil(args, input: bytes = None) -> (int, bytes):
     """Invokes hdiutil with the supplied arguments and returns return code and stdout contents."""  
+    if not os.path.exists(HDIUTIL_PATH):
+        raise FileNotFoundError('Unable to find hdituil.')
+
     completed = subprocess.run([HDIUTIL_PATH] + args, 
         input=input, capture_output=True)
 
