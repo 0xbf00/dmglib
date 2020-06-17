@@ -10,6 +10,7 @@ import subprocess
 import os
 import enum
 import sys
+import typing
 from contextlib import contextmanager
 
 NAME = 'dmglib'
@@ -60,13 +61,18 @@ class DetachingFailed(Exception):
     pass
 
 
+class ConversionFailed(Exception):
+    """Error to indicate that conversion failed"""
+    pass
+
+
 def _raw_hdituil(args, input: bytes = None) -> (int, bytes):
-    """Invokes hdiutil with the supplied arguments and returns return code and stdout contents."""  
+    """Invokes hdiutil with the supplied arguments and returns return code and stdout contents."""
     if not os.path.exists(HDIUTIL_PATH):
         raise FileNotFoundError('Unable to find hdituil.')
 
-    completed = subprocess.run([HDIUTIL_PATH] + args, 
-        input=input, capture_output=True)
+    completed = subprocess.run([HDIUTIL_PATH] + args,
+                               input=input, capture_output=True)
 
     return (completed.returncode, completed.stdout)
 
@@ -121,6 +127,27 @@ def _hdiutil_imageinfo(path, keyphrase=None) -> (bool, dict):
     return _hdiutil(['imageinfo', path], keyphrase=keyphrase)
 
 
+def _hdiutil_convert(input_path: str, output_path: str, disk_format: str) -> (bool, typing.Sequence[str]):
+    """Converts a disk image to a different format.
+
+    Args:
+        input_path: The source disk image
+        output_path: The converted disk image
+        disk_format: One of the hdiutil supported disk image formats
+
+    Returns:
+        Tuple containing the resulting file
+    """
+    return _hdiutil([
+        'convert',
+        '-format',
+        disk_format,
+        '-o',
+        output_path,
+        input_path
+    ])
+
+
 def _hdiutil_attach(path, keyphrase=None) -> (bool, dict):
     """Attaches a disk image.
 
@@ -138,7 +165,7 @@ def _hdiutil_attach(path, keyphrase=None) -> (bool, dict):
     return _hdiutil([
         'attach',
         path,
-        '-nobrowse' # Do not make the mounted volumes visible in Finder.app
+        '-nobrowse'  # Do not make the mounted volumes visible in Finder.app
     ], keyphrase=keyphrase)
 
 
@@ -165,9 +192,9 @@ def attached_images() -> list:
     """Obtain a list of paths to disk images that are currently attached."""
     success, infos = _hdiutil_info()
 
-    return [ image['image-path'] 
-        for image in infos.get('images', []) 
-        if 'image-path' in image ]
+    return [image['image-path']
+            for image in infos.get('images', [])
+            if 'image-path' in image]
 
 
 def dmg_already_attached(path: str) -> bool:
@@ -229,6 +256,27 @@ class DMGState(enum.Enum):
     ATTACHED = 2
 
 
+class DiskFormat(enum.Enum):
+    READ_ONLY = 'UDRO'
+    COMPRESSED_ADC = 'UDCO'
+    COMPRESSED = 'UDZO'
+    COMPRESSED_BZIP2 = 'UDBZ'
+    COMPRESSED_LZFSE = 'UDFO'
+    COMPRESSED_LZMA = 'ULMO'
+    ENTIRE_DEVICE = 'UFBI'
+    IPOD_IMAGE = 'IPOD'
+    UDIF_STUB = 'UDxx'
+    SPARSE_BUNDLE = 'UDSB'
+    SPARSE = 'UDSP'
+    READ_WRITE = 'UDRW'
+    OPTICAL_MASTER = 'UDTO'
+    DISK_COPY = 'DC42'
+    NDIF_READ_WRITE = 'RdWr'
+    NDIF_READ_ONLY = 'Rdxx'
+    NDIF_COMPRESSED = 'ROCo'
+    NDIF_KEN_CODE = 'Rken'
+
+
 class DMGStatus:
     def __init__(self):
         self.status = DMGState.DETACHED
@@ -279,17 +327,15 @@ class DiskImage:
         if dmg_is_encrypted(path) and not dmg_check_keyphrase(path, keyphrase):
             raise PasswordIncorrect()
 
-        self.path       = path
-        self.keyphrase  = keyphrase
+        self.path = path
+        self.keyphrase = keyphrase
         _, self.imginfo = _hdiutil_imageinfo(path, keyphrase=keyphrase)
-        self.status     = DMGStatus()
-
+        self.status = DMGStatus()
 
     def _lookup_property(self, property_name, default_value):
-        return self.imginfo\
-            .get('Properties', dict())\
+        return self.imginfo \
+            .get('Properties', dict()) \
             .get(property_name, default_value)
-
 
     def has_license_agreement(self) -> bool:
         """Checks whether the disk image has an attached license agreement.
@@ -297,7 +343,6 @@ class DiskImage:
         DMGs with license agreements cannot be attached using this package.
         """
         return self._lookup_property('Software License Agreement', False)
-
 
     def attach(self):
         """Attaches a disk image.
@@ -322,10 +367,10 @@ class DiskImage:
         if not success:
             raise AttachingFailed('Attaching failed for unknown reasons.')
 
-        mounted_volumes = [ MountedVolume(mount_point=entity['mount-point'], 
-                                          volume_kind=entity['volume-kind'])
-            for entity in result.get('system-entities', []) 
-            if 'mount-point' in entity and 'volume-kind' in entity ]
+        mounted_volumes = [MountedVolume(mount_point=entity['mount-point'],
+                                         volume_kind=entity['volume-kind'])
+                           for entity in result.get('system-entities', [])
+                           if 'mount-point' in entity and 'volume-kind' in entity]
 
         if len(mounted_volumes) == 0:
             raise AttachingFailed('Attaching the disk image mounted no volumes.')
@@ -336,12 +381,11 @@ class DiskImage:
         # detaching the main volumes. This is a bug in Apple's code -- for all other types of volumes,
         # detaching the volume automatically detaches the entire disk image.
         root_dev_entry = sorted(entity['dev-entry']
-            for entity in result.get('system-entities', [])
-            if 'dev-entry' in entity)[0]
+                                for entity in result.get('system-entities', [])
+                                if 'dev-entry' in entity)[0]
 
         self.status.record_attached(mounted_volumes, root_dev_entry)
-        return [ volume.mount_point for volume in self.status.mount_points ]
-
+        return [volume.mount_point for volume in self.status.mount_points]
 
     def detach(self, force=True):
         """Detaches a disk image.
@@ -376,6 +420,14 @@ class DiskImage:
             raise DetachingFailed()
 
         self.status.record_detached()
+
+    def convert(self, path: str, disk_format: DiskFormat) -> str:
+        success, mount_point_array = _hdiutil_convert(self.path, path, disk_format.value)
+
+        if success:
+            return mount_point_array[0]
+
+        raise ConversionFailed()
 
 
 @contextmanager
