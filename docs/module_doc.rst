@@ -23,6 +23,7 @@ Exceptions
 ----------
 .. autoexception:: dmglib.InvalidDiskImage
 .. autoexception:: dmglib.InvalidOperation
+.. autoexception:: dmglib.ConversionFailed
 
 .. autoexception:: dmglib.AttachingFailed
 .. autoexception:: dmglib.DetachingFailed
@@ -31,3 +32,9 @@ Exceptions
 .. autoexception:: dmglib.PasswordRequired
 .. autoexception:: dmglib.PasswordIncorrect
 .. autoexception:: dmglib.LicenseAgreementNeedsAccepting
+
+Enumerations
+------------
+.. autoclass:: dmglib.DiskFormat
+	:members:
+	:undoc-members:

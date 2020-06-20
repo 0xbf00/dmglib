@@ -66,7 +66,7 @@ class ConversionFailed(Exception):
     pass
 
 
-def _raw_hdituil(args, input: bytes = None) -> (int, bytes):
+def _raw_hdiutil(args, input: bytes = None) -> (int, bytes):
     """Invokes hdiutil with the supplied arguments and returns return code and stdout contents."""
     if not os.path.exists(HDIUTIL_PATH):
         raise FileNotFoundError('Unable to find hdituil.')
@@ -96,7 +96,7 @@ def _hdiutil(args, plist=True, keyphrase=None) -> (bool, dict):
     if keyphrase is not None:
         args.append('-stdinpass')
 
-    returncode, output = _raw_hdituil(args, input=keyphrase.encode('utf8') if keyphrase else None)
+    returncode, output = _raw_hdiutil(args, input=keyphrase.encode('utf8') if keyphrase else None)
     if returncode != 0:
         return False, dict()
 
@@ -257,6 +257,9 @@ class DMGState(enum.Enum):
 
 
 class DiskFormat(enum.Enum):
+    """
+    Supported disk image formats for convert verb.
+    """
     READ_ONLY = 'UDRO'
     COMPRESSED_ADC = 'UDCO'
     COMPRESSED = 'UDZO'
@@ -422,6 +425,20 @@ class DiskImage:
         self.status.record_detached()
 
     def convert(self, path: str, disk_format: DiskFormat) -> str:
+        """Converts a disk image to a different format.
+
+        Args:
+            path: The path where to store the converted disk image.
+            disk_format: One of the hdiutil supported disk image formats, see :class:`DiskFormat`
+
+        Returns:
+            The filepath where the converted disk image was stored. Note that this
+            may differ from `path` in case the correct file extension for the chosen
+            disk format differs from the file extension provided as part of `path`.
+
+        Raises:
+            ConversionFailed: hdiutil could not convert the disk image to the specified format.
+        """
         success, mount_point_array = _hdiutil_convert(self.path, path, disk_format.value)
 
         if success:
