@@ -13,3 +13,5 @@
 
 # macOS Temporary files
 **/.DS_Store
+
+.idea/
