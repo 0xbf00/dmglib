@@ -72,7 +72,8 @@ def _raw_hdiutil(args, input: bytes = None) -> (int, bytes):
         raise FileNotFoundError('Unable to find hdituil.')
 
     completed = subprocess.run([HDIUTIL_PATH] + args,
-                               input=input, capture_output=True)
+                               input=input, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
 
     return (completed.returncode, completed.stdout)
 
