@@ -381,9 +381,6 @@ class DiskImage:
 
         # The root dev entry is the smallest '/dev/disk...' entry when sorted
         # lexicographically. (/dev/disk2 < /dev/disk3 < /dev/disk3s1)
-        # In the case of disk images containing APFS volumes, we need to detach this disk _after_
-        # detaching the main volumes. This is a bug in Apple's code -- for all other types of volumes,
-        # detaching the volume automatically detaches the entire disk image.
         root_dev_entry = sorted(entity['dev-entry']
                                 for entity in result.get('system-entities', [])
                                 if 'dev-entry' in entity)[0]
@@ -404,21 +401,6 @@ class DiskImage:
         if not self.status.is_attached():
             raise InvalidOperation()
 
-        # Detaching any mount point of an attached image automatically unmounts
-        # all associated volumes.
-        # ... unless one of these volumes is an APFS volume. In that case,
-        # it needs to be detached separately. Additionally, the root dev entry
-        # also needs to be detached explicitly.
-
-        # First detach all APFS volumes, otherwise detaching other volumes appears to
-        # succeeds but really fails with an error code (!)
-        for volume in self.status.mount_points:
-            if volume.volume_kind == 'apfs':
-                success = _hdiutil_detach(volume.mount_point, force=force)
-                if not success:
-                    raise DetachingFailed()
-
-        # Finally, detach the root dev entry.
         success = _hdiutil_detach(self.status.root_dev_entry, force=force)
         if not success:
             raise DetachingFailed()
