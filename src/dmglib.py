@@ -149,7 +149,7 @@ def _hdiutil_convert(input_path: str, output_path: str, disk_format: str) -> (bo
     ])
 
 
-def _hdiutil_attach(path, keyphrase=None) -> (bool, dict):
+def _hdiutil_attach(path, keyphrase=None, mountpoint=None) -> (bool, dict):
     """Attaches a disk image.
 
     The image is mounted using the `-nobrowse` flag so that it is not visible in
@@ -158,16 +158,22 @@ def _hdiutil_attach(path, keyphrase=None) -> (bool, dict):
     Args:
         path: The disk image to attach.
         keyphrase: Optional parameter for encrypted images.
+        mountpoint: Optional path where disk image should be mounted.
 
     Returns:
         Tuple containing status code and information on mounted volume,
         if successful.
     """
-    return _hdiutil([
+    args: list[str] = [
         'attach',
         path,
         '-nobrowse'  # Do not make the mounted volumes visible in Finder.app
-    ], keyphrase=keyphrase)
+    ]
+
+    if mountpoint is not None:
+        args.extend(['-mountpoint', mountpoint])
+
+    return _hdiutil(args, keyphrase=keyphrase)
 
 
 def _hdiutil_detach(dev_node, force=False) -> bool:
@@ -348,8 +354,11 @@ class DiskImage:
         """
         return self._lookup_property('Software License Agreement', False)
 
-    def attach(self):
+    def attach(self, mountpoint=None):
         """Attaches a disk image.
+
+        Args:
+            mountpoint: Optional path where disk image should be mounted.
 
         Returns:
             List of mount points.
@@ -367,7 +376,7 @@ class DiskImage:
         if self.has_license_agreement():
             raise LicenseAgreementNeedsAccepting()
 
-        success, result = _hdiutil_attach(self.path, keyphrase=self.keyphrase)
+        success, result = _hdiutil_attach(self.path, keyphrase=self.keyphrase, mountpoint=mountpoint)
         if not success:
             raise AttachingFailed('Attaching failed for unknown reasons.')
 
