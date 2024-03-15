@@ -343,7 +343,7 @@ class FsFormat(enum.Enum):
     MAC_OS_EXTENDED_CASE = 'Case-sensitive HFS+'
     MAC_OS_EXTENDED_CASE_JOUR = 'Case-sensitive Journaled HFS+'
     MAC_OS_EXTENDED_JOUR = 'Journaled HFS+'
-    ExFAT = 'ExFAT'
+    EXFAT = 'ExFAT'
     APFS_CASE = 'Case-sensitive APFS'
     APFS = 'APFS'
 
@@ -397,8 +397,8 @@ def create_blank_dmg(path: str, disk_type: DiskCreateBlankFormat=None, fs_type: 
     if not success:
         raise CreatingFailed()
 
-    created_image_path = created_image_path_dict[0]
     if disk_type == DiskCreateBlankFormat.SPARSE_IMAGE and rename_sparse:
+        created_image_path = created_image_path_dict[0]
         if created_image_path != path:
             os.rename(created_image_path, path)
 
