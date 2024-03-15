@@ -383,7 +383,7 @@ def create_blank_dmg(path: str, disk_type: DiskCreateBlankFormat=None, fs_type: 
         raise CreatingFailed('Specified image is alredy exists.')
 
     if disk_type == DiskCreateBlankFormat.SPARSE_IMAGE and os.path.exists(path + '.sparseimage'):
-        raise CreatingFailed('Specified image is alredy exists with `.sparseimage` extention, rename or remove it mannualy.')
+        raise CreatingFailed('Specified image is alredy exists with a `.sparseimage` extension, rename or remove it manualy.')
 
     if size == None:
         if disk_type != DiskCreateBlankFormat.SPARSEBUNDLE_IMAGE and disk_type != DiskCreateBlankFormat.SPARSE_IMAGE:
