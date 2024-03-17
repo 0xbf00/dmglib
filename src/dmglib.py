@@ -248,6 +248,59 @@ def dmg_already_attached(path: str) -> bool:
     return os.path.realpath(path) in attached_images()
 
 
+def get_dmg_mountpoints(path: str) -> dict:
+    """Returns mountpoints of the already attached dmg.
+
+    Args:
+        path: path to the already attached disk image.
+
+    Returns:
+        Dict with mountpoints.
+
+    Raises:
+        InvalidOperation: if image is not already attached.
+    """
+    if not dmg_already_attached(path):
+        raise InvalidOperation()
+
+    success, infos = _hdiutil_info()
+
+    image = next(
+                filter(
+                    lambda image:
+                        'image-path' in image
+                        and image['image-path'] == os.path.realpath(path),
+                    infos.get('images', []),
+                )
+            )
+
+    return [entite['mount-point']
+            for entite in image.get('system-entities', [])
+            if 'mount-point' in entite]
+
+
+def detach_already_attached(path: str, force=True):
+    """Detaches a disk image without DiskImage object, e.g. for creating it.
+
+    Args:
+        path: path to the disk image
+        force: ignore open files on mounted volumes. See `man 1 hdiutil`.
+
+    Raises:
+        InvalidOperation: The disk image was not attached on the system.
+        DetachingFailed: Detaching failed for unknown reasons.
+    """
+    if not dmg_already_attached(path):
+        raise InvalidOperation()
+
+    mountpoints = get_dmg_mountpoints(path)
+    for mountpoint in mountpoints:
+        success = _hdiutil_detach(mountpoint, force=force)
+        if not success:
+            raise DetachingFailed()
+
+
+
 def dmg_is_encrypted(path: str) -> bool:
     """Checks whether DMG at the supplied path is password protected."""
     return _hdiutil_isencrypted(path)
