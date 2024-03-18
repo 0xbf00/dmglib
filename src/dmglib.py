@@ -205,7 +205,7 @@ def _hdiutil_create(path, disk_type: str = None, fs_type: str = None, size: str 
         path: The disk image path.
         disk_type: Optional parameter to specify a disk type.
         fs_type: Optional parameter to specify a filesystem type.
-        size: Optional parameter to specify a image size.
+        size: Optional parameter to specify an image size.
 
     Returns:
         Tuple containing status code and dict with created image path, if successful.
