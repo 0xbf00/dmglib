@@ -17,6 +17,7 @@ NAME = 'dmglib'
 
 HDIUTIL_PATH = '/usr/bin/hdiutil'
 
+
 class InvalidDiskImage(Exception):
     """The disk image is deemed invalid and therefore cannot be attached."""
     pass
@@ -62,7 +63,7 @@ class DetachingFailed(Exception):
 
 
 class CreatingFailed(Exception):
-    """Error to indicate a image could not be created successfully."""
+    """Error to indicate an image could not be created successfully."""
     pass
 
 
@@ -194,10 +195,11 @@ def _hdiutil_detach(dev_node, force=False) -> bool:
     success, _ = _hdiutil(['detach', dev_node] + (['-force'] if force else []), plist=False)
     return success
 
-def _hdiutil_create(path, disk_type: str=None, fs_type: str=None, size: str=None) -> (bool, dict):
+
+def _hdiutil_create(path, disk_type: str = None, fs_type: str = None, size: str = None) -> (bool, dict):
     """Creates a disk image.
 
-    Only creating a blank disk images is currently supported.
+    Only creating blank disk images is currently supported.
 
     Args:
         path: The disk image path.
@@ -248,7 +250,7 @@ def dmg_already_attached(path: str) -> bool:
     return os.path.realpath(path) in attached_images()
 
 
-def get_dmg_mountpoints(path: str) -> dict:
+def dmg_get_mountpoints(path: str) -> dict:
     """Returns mountpoints of the already attached dmg.
 
     Args:
@@ -266,20 +268,18 @@ def get_dmg_mountpoints(path: str) -> dict:
     success, infos = _hdiutil_info()
 
     image = next(
-                filter(
-                    lambda image:
-                        'image-path' in image
-                        and image['image-path'] == os.path.realpath(path),
-                    infos.get('images', []),
-                )
-            )
+        filter(
+            lambda image: image.get('image-path', None) == os.path.realpath(path),
+            infos.get('images', []),
+        )
+    )
 
-    return [entite['mount-point']
-            for entite in image.get('system-entities', [])
-            if 'mount-point' in entite]
+    return [entity['mount-point']
+            for entity in image.get('system-entities', [])
+            if 'mount-point' in entity]
 
 
-def detach_already_attached(path: str, force=True):
+def dmg_detach_already_attached(path: str, force=True):
     """Detaches a disk image without DiskImage object, e.g. for creating it.
 
     Args:
@@ -293,12 +293,11 @@ def detach_already_attached(path: str, force=True):
     if not dmg_already_attached(path):
         raise InvalidOperation()
 
-    mountpoints = get_dmg_mountpoints(path)
+    mountpoints = dmg_get_mountpoints(path)
     for mountpoint in mountpoints:
         success = _hdiutil_detach(mountpoint, force=force)
         if not success:
             raise DetachingFailed()
-
 
 
 def dmg_is_encrypted(path: str) -> bool:
@@ -374,6 +373,7 @@ class DiskFormat(enum.Enum):
     NDIF_COMPRESSED = 'ROCo'
     NDIF_KEN_CODE = 'Rken'
 
+
 class DiskCreateBlankFormat(enum.Enum):
     """
     Supported disk image formats for create verb (blank images).
@@ -383,9 +383,10 @@ class DiskCreateBlankFormat(enum.Enum):
     SPARSE_IMAGE = 'SPARSE'
     SPARSEBUNDLE_IMAGE = 'SPARSEBUNDLE'
 
+
 class FsFormat(enum.Enum):
     """
-    Supported fylesystem formats.
+    Supported filesystem formats.
     """
     UNIVERSAL_DISK = 'UDF'
     MS_DOS_FAT12 = 'MS-DOS FAT12'
@@ -399,6 +400,7 @@ class FsFormat(enum.Enum):
     EXFAT = 'ExFAT'
     APFS_CASE = 'Case-sensitive APFS'
     APFS = 'APFS'
+
 
 class DMGStatus:
     def __init__(self):
@@ -419,8 +421,10 @@ class DMGStatus:
         self.mount_points = []
 
 
-def create_blank_dmg(path: str, disk_type: DiskCreateBlankFormat=None, fs_type: FsFormat=None, size=None, rename_sparse=False):
-    """Creates blank DMG. Note: Doesn't constructs the DiskImage object.
+def create_blank_dmg(
+        path: str, disk_type: DiskCreateBlankFormat = None, fs_type: FsFormat = None, size=None,
+        rename_sparse=False):
+    """Creates blank DMG. Note: Doesn't construct the DiskImage object.
 
     Args:
         path: The path to the disk image
@@ -433,19 +437,22 @@ def create_blank_dmg(path: str, disk_type: DiskCreateBlankFormat=None, fs_type: 
         CreatingFailed: Error while creating blank disk images
     """
     if os.path.exists(path):
-        raise CreatingFailed('Specified image is alredy exists.')
+        raise CreatingFailed('Specified image alredy exists.')
 
     if disk_type == DiskCreateBlankFormat.SPARSE_IMAGE and os.path.exists(path + '.sparseimage'):
-        raise CreatingFailed('Specified image is alredy exists with a `.sparseimage` extension, rename or remove it manualy.')
+        raise CreatingFailed(
+            'Specified image is alredy exists with `.sparseimage` extension, rename or remove it manualy.')
 
     if size == None:
         if disk_type != DiskCreateBlankFormat.SPARSEBUNDLE_IMAGE and disk_type != DiskCreateBlankFormat.SPARSE_IMAGE:
-            raise CreatingFailed('Size if empty. Creating the growable disk image only supported on SPARSE_BUNDLE and SPARSE type.')
+            raise CreatingFailed(
+                'Size is empty which is only supported for SPARSE_BUNDLE and SPARSE disk images.')
 
     disk_type_str = disk_type.value if disk_type else None
     fs_type_str = fs_type.value if fs_type else None
 
-    success, created_image_path_dict = _hdiutil_create(path=path, disk_type=disk_type_str, fs_type=fs_type_str, size=size)
+    success, created_image_path_dict = _hdiutil_create(
+        path=path, disk_type=disk_type_str, fs_type=fs_type_str, size=size)
 
     if not success:
         raise CreatingFailed()
