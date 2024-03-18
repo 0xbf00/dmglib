@@ -446,7 +446,7 @@ def create_blank_dmg(
     if size == None:
         if disk_type != DiskCreateBlankFormat.SPARSEBUNDLE_IMAGE and disk_type != DiskCreateBlankFormat.SPARSE_IMAGE:
             raise CreatingFailed(
-                'Size is empty which is only supported for SPARSE_BUNDLE and SPARSE disk images.')
+                'Size is empty, which is only supported for SPARSE_BUNDLE and SPARSE disk images.')
 
     disk_type_str = disk_type.value if disk_type else None
     fs_type_str = fs_type.value if fs_type else None
