@@ -421,7 +421,7 @@ class DMGStatus:
         self.mount_points = []
 
 
-def create_blank_dmg(
+def dmg_create_blank(
         path: str, disk_type: DiskCreateBlankFormat = None, fs_type: FsFormat = None, size=None,
         rename_sparse=False):
     """Creates blank DMG. Note: Doesn't construct the DiskImage object.
