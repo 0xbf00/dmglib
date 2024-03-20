@@ -18,6 +18,9 @@ Standalone functions
 .. autofunction:: dmglib.dmg_already_attached
 .. autofunction:: dmglib.dmg_is_encrypted
 .. autofunction:: dmglib.dmg_check_keyphrase
+.. autofunction:: dmglib.dmg_get_mountpoints
+.. autofunction:: dmglib.dmg_detach_already_attached
+.. autofunction:: dmglib.dmg_create_blank
 
 Exceptions
 ----------
@@ -33,8 +36,18 @@ Exceptions
 .. autoexception:: dmglib.PasswordIncorrect
 .. autoexception:: dmglib.LicenseAgreementNeedsAccepting
 
+.. autoexception:: dmglib.CreatingFailed
+
 Enumerations
 ------------
 .. autoclass:: dmglib.DiskFormat
 	:members:
 	:undoc-members:
+
+.. autoclass:: dmglib.DiskCreateBlankFormat
+    :members:
+    :undoc-members:
+
+.. autoclass:: dmglib.FsFormat
+    :members:
+    :undoc-members:
