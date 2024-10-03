@@ -172,7 +172,7 @@ def _hdiutil_attach(path, keyphrase=None, mountpoint=None) -> (bool, dict):
     """
     args: list[str] = [
         'attach',
-        path,
+        os.path.realpath(path),
         '-nobrowse'  # Do not make the mounted volumes visible in Finder.app
     ]
 
