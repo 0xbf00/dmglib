@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
       name='dmglib',
-      version='0.9.5',
+      version='0.9.6',
       description='Work with macOS DMG disk images',
       long_description=long_desc,
       long_description_content_type="text/markdown",
